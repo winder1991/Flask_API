@@ -4,6 +4,7 @@ Created on Tue May 10 20:31:55 2022
 
 @author: BlueSpark
 """
+from email.mime import application
 from flask import Flask, request, jsonify
 import csv
 from helper import listify, update_county, unique_update, update_energy, update_weather
@@ -15,14 +16,14 @@ from pymongo import UpdateOne
 import pandas as pd
 from com_forecast import predict_load_seasonality
 
-app = Flask(__name__)
+application = Flask(__name__)
 sec = pd.read_csv('../key.csv')
 user = sec['username'].iloc[0]
 pw = sec['password'].iloc[0]
 
-app.config["DB_path"] ='../data'
+application.config["DB_path"] ='../data'
 # app.config["mongo_connection"] ='mongodb://localhost:27081'
-app.config["mongo_connection"] = "mongodb+srv://{}:{}@cluster0.pjmu6.mongodb.net/?retryWrites=true&w=majority".format(user, pw)
+application.config["mongo_connection"] = "mongodb+srv://{}:{}@cluster0.pjmu6.mongodb.net/?retryWrites=true&w=majority".format(user, pw)
 
 client = MongoClient(app.config["mongo_connection"])
 
@@ -49,11 +50,11 @@ def initiate(client,test=False):
         update_county(db, county_file)     
     return db
 
-@app.route('/')
+@application.route('/')
 def index():
     return "Welcome to Commercial Building Energy Forecast API"
 
-@app.route('/forecast',methods = ['GET'])
+@application.route('/forecast',methods = ['GET'])
 def get_forecast():
     if request.method == 'GET':
         db = initiate(client)
@@ -117,7 +118,7 @@ def get_forecast():
         #           {"test":["c"], "test2":["d"]}]
         return jsonify({"response":"Success","forecast":results})
 
-@app.route('/county_building',methods = ['GET'])
+@application.route('/county_building',methods = ['GET'])
 def get_county_building():
     db = initiate(client)
     results = []
@@ -132,7 +133,7 @@ def get_county_building():
 
 
 
-@app.route('/historical',methods =['POST'])
+@application.route('/historical',methods =['POST'])
 def post_historical():
     is_batch = int(request.args.get('is_batch'))
     db = initiate(client)
@@ -180,7 +181,7 @@ def post_historical():
         # print(building_id,time, P, temp, humid,county)
         return jsonify({"response":"Success"})
 
-@app.route('/historical/csv', methods=['POST'])
+@application.route('/historical/csv', methods=['POST'])
 def post_historical_file():
     file = request.files['file']
     db = initiate(client)
@@ -203,16 +204,18 @@ def post_historical_file():
             print("invalid file type")
     return jsonify({"response":"Success"})
 
-@app.route('/cleardb', methods=['DELETE'])
+@application.route('/cleardb', methods=['DELETE'])
 def clear_mongo():
     if request.method == 'DELETE':
         client.drop_database("ComEnergy")
         return jsonify({"response":"database dropped"})
 
-@app.route('/test', methods=['POST'])
+@application.route('/test', methods=['POST'])
 def test_file_import():
     if request.method == 'POST':
         db = initiate(client, test=True)
         return jsonify({"response":"Test File Inserted"})
-    
-app.run(host='0.0.0.0', port=81)
+
+if __name__ == "__main__":   
+    application.debug = True
+    application.run(host='0.0.0.0', port=81)
