@@ -25,7 +25,7 @@ application.config["DB_path"] ='../data'
 # app.config["mongo_connection"] ='mongodb://localhost:27081'
 application.config["mongo_connection"] = "mongodb+srv://{}:{}@cluster0.pjmu6.mongodb.net/?retryWrites=true&w=majority".format(user, pw)
 
-client = MongoClient(app.config["mongo_connection"])
+client = MongoClient(application.config["mongo_connection"])
 
 
 def initiate(client,test=False):
